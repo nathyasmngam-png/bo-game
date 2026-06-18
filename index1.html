@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IT Typing Speed Test | เกมฝึกพิมพ์เร็วคำศัพท์คอมพิวเตอร์</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0f172a;
+            color: #f8fafc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .game-container {
+            background: #1e293b;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #3b82f6;
+            margin-bottom: 5px;
+            font-size: 28px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .stat-box {
+            background: #334155;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        #word-display {
+            font-size: 36px;
+            font-weight: bold;
+            color: #eab308;
+            margin: 30px 0;
+            letter-spacing: 2px;
+            min-height: 54px;
+        }
+
+        #type-input {
+            width: 80%;
+            padding: 12px 20px;
+            font-size: 18px;
+            border: 2px solid #475569;
+            border-radius: 8px;
+            background: #0f172a;
+            color: white;
+            text-align: center;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        #type-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+        }
+
+        #type-input.error {
+            border-color: #ef4444;
+            background: #451a1a;
+        }
+
+        .btn {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: 0.2s;
+        }
+
+        .btn:hover {
+            background: #059669;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <h1>⌨️ IT Speed Typer</h1>
+        <p style="color: #94a3b8; margin-top: 0;">พิมพ์คำศัพท์คอมพิวเตอร์ให้เร็วที่สุด!</p>
+
+        <div id="start-screen">
+            <button class="btn" onclick="startGame()">เริ่มเล่นเกม</button>
+        </div>
+
+        <div id="game-screen" class="hidden">
+            <div class="stats-grid">
+                <div class="stat-box">คะแนน: <span id="score-text" style="color: #10b981;">0</span></div>
+                <div class="stat-box">เวลาเหลือ: <span id="timer-text" style="color: #ef4444;">5</span> วิ</div>
+            </div>
+
+            <div id="word-display">คำศัพท์</div>
+
+            <input type="text" id="type-input" placeholder="พิมพ์ตามคำข้างบน..." autocomplete="off">
+            
+            <div style="margin-top: 15px; font-size: 14px; color: #64748b;">
+                คะแนนสูงสุดในเครื่องนี้: <span id="high-score-text">0</span>
+            </div>
+        </div>
+
+        <div id="game-over-screen" class="hidden">
+            <h2 style="color: #ef4444;">💥 หมดเวลา / จบเกม!</h2>
+            <p style="font-size: 20px;">คุณทำคะแนนได้: <span id="final-score" style="color: #eab308; font-weight: bold;">0</span> คะแนน</p>
+            <button class="btn" onclick="startGame()">เล่นใหม่อีกครั้ง</button>
+        </div>
+    </div>
+
+    <script>
+        // คลังคำศัพท์ไอทีภาษาไทย
+        const words = [
+            "คอมพิวเตอร์", "คีย์บอร์ด", "เมาส์", "เมนบอร์ด", "อินเทอร์เน็ต", 
+            "เว็บไซต์", "ซอฟต์แวร์", "ฮาร์ดแวร์", "หน้าจอ", "พรินเตอร์", 
+            "เราเตอร์", "เครือข่าย", "ข้อมูล", "โปรแกรม", "เซิร์ฟเวอร์", 
+            "คลาวด์", "ฐานข้อมูล", "หน่วยความจำ", "ฮาร์ดดิสก์", "เซนเซอร์", 
+            "อัลกอริทึม", "โค้ดดิ้ง", "โปรแกรมเมอร์", "กราฟิก", "แฮกเกอร์", 
+            "ไวรัส", "มัลแวร์", "ไฟร์วอลล์", "ดิจิทัล", "ปัญญาประดิษฐ์",
+            "เทคโนโลยี", "สมาร์ตโฟน", "แท็บเล็ต", "โน้ตบุ๊ก", "แล็ปท็อป"
+        ];
+
+        let score = 0;
+        let timeLeft = 5;
+        let timerInterval = null;
+        let currentWord = "";
+        
+        const startScreen = document.getElementById("start-screen");
+        const gameScreen = document.getElementById("game-screen");
+        const gameOverScreen = document.getElementById("game-over-screen");
+        const wordDisplay = document.getElementById("word-display");
+        const typeInput = document.getElementById("type-input");
+        const scoreText = document.getElementById("score-text");
+        const timerText = document.getElementById("timer-text");
+        const finalScore = document.getElementById("final-score");
+        const highScoreText = document.getElementById("high-score-text");
+
+        // โหลดคะแนนสูงสุดจาก LocalStorage ของเบราว์เซอร์
+        let highScore = localStorage.getItem("it_high_score") || 0;
+        highScoreText.innerText = highScore;
+
+        function startGame() {
+            score = 0;
+            timeLeft = 5; // ให้เวลา 5 วินาทีต่อคำ (เพิ่มความท้าทาย)
+            scoreText.innerText = score;
+            timerText.innerText = timeLeft;
+            
+            startScreen.classList.add("hidden");
+            gameOverScreen.classList.add("hidden");
+            gameScreen.classList.remove("hidden");
+            
+            typeInput.value = "";
+            typeInput.disabled = false;
+            typeInput.focus();
+            
+            nextWord();
+            
+            clearInterval(timerInterval);
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        function nextWord() {
+            const randomIndex = Math.floor(Math.random() * words.length);
+            currentWord = words[randomIndex];
+            wordDisplay.innerText = currentWord;
+            typeInput.value = "";
+            typeInput.classList.remove("error");
+        }
+
+        // ตรวจสอบการพิมพ์แบบ Real-time
+        typeInput.addEventListener("input", () => {
+            const userInp = typeInput.value;
+            
+            // ถ้ายืนยันความถูกต้อง (พิมพ์ถูกครบคำพอดี)
+            if (userInp === currentWord) {
+                score++;
+                scoreText.innerText = score;
+                timeLeft = 5; // รีเซ็ตเวลาให้เต็ม 5 วินาทีใหม่เมื่อพิมพ์ถูก
+                timerText.innerText = timeLeft;
+                nextWord();
+            } else {
+                // ถ้าพิมพ์ผิดทาง (ข้อความปัจจุบันไม่ได้เริ่มด้วยคำเฉลย)
+                if (currentWord.indexOf(userInp) !== 0) {
+                    typeInput.classList.add("error");
+                } else {
+                    typeInput.classList.remove("error");
+                }
+            }
+        });
+
+        function updateTimer() {
+            timeLeft--;
+            timerText.innerText = timeLeft;
+            
+            if (timeLeft <= 0) {
+                endGame();
+            }
+        }
+
+        function endGame() {
+            clearInterval(timerInterval);
+            gameScreen.classList.add("hidden");
+            gameOverScreen.classList.remove("hidden");
+            finalScore.innerText = score;
+            
+            // บันทึกคะแนนสูงสุดใหม่
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem("it_high_score", highScore);
+                highScoreText.innerText = highScore;
+            }
+        }
+    </script>
+</body>
+</html>
